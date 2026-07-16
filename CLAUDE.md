@@ -10,13 +10,13 @@ wrong. Think "Robustaloid," "Crudmond," "Squelchior."
 The target aesthetic is hard to fully distill and is ultimately a taste call by
 the user. Do not over-systematize. Emergent rules are useful but should be held
 loosely — when the user says a batch leans too hard on one pattern, vary it.
-A 20–30% hit rate per batch is expected and fine; rerolling is part of the joy.
+A low hit rate per batch is expected and fine; rerolling is part of the joy.
 Optimize for occasional bangers, not consistent mediocrity.
 
 Qualities of a good goblin:
 - Sounds like it could be a real English/Latin/medieval word but isn't
 - Heavy consonant onsets: thr-, gr-, cr-, spl-, squ-, br-, gl-
-- Back vowels dominate: o, u
+- Back vowels dominate: o, u; or back vowel diphthongs: oi, au, ui
 - Chunky codas: -nd, -mb, -ng, -lch, -nk
 - Rolls off the tongue — pronounceability is non-negotiable
 - Funny on first read ("Crudmond made me laugh on reading it")
@@ -24,8 +24,8 @@ Qualities of a good goblin:
 ## Canonical corpus (the keepers)
 
 Goblins (primary training data / few-shot seeds):
-Robustaloid, Lloyd Viquid, Squelchior, Throbulus, Crembulant, Throngle,
-Grondular, Crudmond, Splanchnic, Blubthazar, Scronkulus, Grondombulus,
+Robustaloid, Squelchior, Throbulus, Crembulant, Throngle,
+Grondular, Crudmond, Splanchnic, Blubthazar, Grondombulus,
 Drankular, Brudulant, Crobmund, Thruntax, Squonius, Bombastaloid
 
 Real words that are honorary goblins: Splanchnic, Borborygmus
@@ -87,13 +87,3 @@ for flow, e.g. "throb-ulus").
 4. **Later, if corpus grows to hundreds**: makemore-style char-level model as
    a learning project. NOT a LoRA/LLM fine-tune — corpus is far too small and
    would just memorize.
-
-## Workflow notes
-
-- User is on WSL2 (Ubuntu), comfortable with Python and the terminal, prefers
-  seeing what's happening while coding — favor readable code and visible
-  intermediate output over clever abstraction.
-- Push back early if a solution is getting complicated; the simpler fix is
-  usually right.
-- CLI-first is fine. Batch generation with a keep/skip loop that appends to a
-  keepers file would fit the workflow well.
