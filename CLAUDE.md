@@ -69,21 +69,28 @@ spleen, naphtha, creosote, bismuth, gravy, ennui, crouton.
 
 ## Current state
 
-`gen.py` (from prior prototyping): weighted onset/vowel/coda pools + three
-suffix families + junction-compatibility rules (consonant-initial suffixes
-require sonorant-ish codas; vowel-initial suffixes sometimes trim the coda
-for flow, e.g. "throb-ulus").
+`goblins/` package (evolved from the `gen.py` prototype, now removed):
+- `data.py` — weighted onset/vowel/coda pools, suffix families (vowel-initial
+  Latinate + consonant-initial medieval), real-stem pool
+- `generator.py` — assembly + junction smoothing: consonant-initial suffixes
+  require clean codas and heavy coda clusters get trimmed before them
+  (except l-initial suffixes: throngle, crumble); vowel-initial suffixes
+  sometimes trim the coda for flow ("throb-ulus")
+- `keepers.py` — keepers persist to `keepers.txt` (one name per line, seeded
+  with the canonical corpus); onset/coda/suffix/stem counts in keepers add to
+  base weights, capped at 3x base so no pattern dominates
+- `cli.py` — interactive batch/keep/reroll loop (`python3 -m goblins`),
+  one-shot mode (`-n 20`)
 
 ## Roadmap ideas (discussed with user, in rough priority order)
 
-1. **Real-stem pool**: mix real chunky/gross English monosyllables (grist,
-   throb, gunk, clomp, crud, squelch, wallop...) into the synthetic stems.
-   Several top keepers are real-word + fake-suffix.
-2. **Keeper feedback loop**: persist kept names; use them to retune pool
-   weights (count onset/coda/suffix frequencies in keepers).
+1. ~~**Real-stem pool**~~ DONE: real chunky monosyllables mixed into the
+   synthetic stems at ~40% (`REAL_STEM_P` in data.py).
+2. ~~**Keeper feedback loop**~~ DONE: see keepers.py above.
 3. **N-gram scoring**: train a char-level order-2/3 Markov model on the keeper
    corpus, use it to SCORE rule-generated candidates (not generate), surface
-   only the top slice. Viable even with a ~30-name corpus.
+   only the top slice. Viable even with a ~30-name corpus. The hook exists:
+   `generate_batch(..., scorer=fn)` oversamples and keeps the top n.
 4. **Later, if corpus grows to hundreds**: makemore-style char-level model as
    a learning project. NOT a LoRA/LLM fine-tune — corpus is far too small and
    would just memorize.
