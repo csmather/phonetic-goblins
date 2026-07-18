@@ -1,38 +1,66 @@
 # phonetic-goblins
 
-Generator for absurd character names: Robustaloid, Crudmond, Squelchior tier.
-See CLAUDE.md for the vibe, the corpus, and the taste rules; ideas.md for the
-research and theory behind the pools.
+A generator for absurd character names: Robustaloid, Crudmond, Squelchior.
 
 **Live at: https://csmather.github.io/phonetic-goblins/**
 
-Static site, no build step, no dependencies. Pushing to `main` deploys via
-GitHub Actions.
+## The vibe
 
-## How it works
+A phonetic goblin is a word that sounds like a real English, Latin, or
+medieval word gone wrong. The good ones share a few traits: heavy consonant
+onsets (thr-, gr-, squ-, spl-), back vowels (o, u), chunky endings (-nd,
+-mb, -lch), and an obvious pronunciation — if you have to negotiate where
+the stress goes, the word is dead. Above all it should be funny on first
+read. A low hit rate per batch is expected; rerolling is part of the joy.
 
-- **`pools.js`** — the fiddle file. All phonaestheme pools, suffix families
-  (latinate/medieval/diminutive/mineral), real stems, knobs, and the seed
-  keeper corpus live here as commented `piece: weight` lines. Tune taste by
-  editing this; no other code involved.
-- `goblins.js` — the engine: assembles stems + suffixes with junction rules
-  (silent-e stripping, gemination like blub+ard → Blubbard, heavy-coda
-  trimming before consonant suffixes so there are no pileups), plus keeper
-  storage and weight retuning. Keeper counts of each onset/coda/suffix/stem
-  gently boost its weight, capped so no single pattern dominates.
-- `app.js` / `index.html` / `style.css` — the UI. Click a name to keep it;
-  the seed corpus is baked in and each visitor's own keeps persist in their
-  browser's localStorage.
+## How the names are built
 
-Run locally: open index.html in a browser, or `python3 -m http.server`.
+Each name is a stem plus a suffix. Stems are either assembled from weighted
+phoneme pools (onset + vowel + coda) or drawn from a pool of real chunky
+words like crud, grist, and gourd. Suffixes are grouped into families that
+each fake a different etymology: Latinate/medical (-ulus, -aloid, -uncle —
+sounds like a doctor named it), medieval (-mond, -bald, -ard — sounds like
+a man who held land in 1183), diminutive (-le, -ock), and mineral (-ite,
+-ium — sounds discovered rather than born). The comedy comes from the
+register collision: a gutter stem wearing formal morphology.
 
-## Roadmap hooks
+Junction rules keep everything pronounceable — silent e's drop before vowel
+suffixes (sludge → Sludgular), short final consonants double before -ard
+and -ock the way English does in sluggard (blub → Blubbard), and heavy
+consonant clusters get trimmed before consonant suffixes so nothing like
+"Grondmond" escapes.
 
-`generateBatch(..., scorer)` accepts any `name -> number` callable: it
-oversamples candidates and returns the top slice. Roadmap step 3 is writing
-that scorer (char-level order-2/3 Markov model trained on the keepers).
+There's some real linguistics behind the pool choices. A University of
+Alberta study found that made-up words are funnier the more improbable
+their letter combinations are (their star example: "snunkoople"), old
+comedy lore holds that plosives — especially the k sound — are the
+funniest consonants, and English has "phonaesthemes": sound clusters like
+sn- and gr- that carry a vibe without a meaning. The pools lean on all
+three.
 
-## History
+Keeping a name feeds back into generation: each kept name's onset, coda,
+suffix, and stem get a small weight boost, capped so no single pattern
+takes over. A canon corpus is baked in; your own keeps live in your
+browser.
 
-The original implementation was Python (same engine, `pools.toml`,
+## Files
+
+- `pools.js` — all the taste: phoneme pools, suffix families, real stems,
+  knobs, and the seed corpus, as commented `piece: weight` lines. Tune the
+  generator by editing this file.
+- `goblins.js` — the engine: assembly, junction rules, keeper storage,
+  retuning.
+- `app.js` / `index.html` / `style.css` — the UI.
+
+No build step, no dependencies. Run locally by opening index.html, or
+`python3 -m http.server`. Pushing to `main` deploys via GitHub Actions.
+
+## Roadmap
+
+Next up is scoring: a small character-level Markov model trained on the
+keepers, used to rank candidates rather than generate them. The hook
+already exists — `generateBatch(..., scorer)` oversamples and keeps the
+top slice.
+
+The original implementation was Python (same engine, a pools.toml, an
 interactive CLI). It lives in git history at the `python-final` tag.
