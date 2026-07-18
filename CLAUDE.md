@@ -67,20 +67,30 @@ alignment, but this codebase only implements the goblin engine:
 Words the user has flagged as generally good raw material: ganglion, crembulant,
 spleen, naphtha, creosote, bismuth, gravy, ennui, crouton.
 
-## Current state
+## Current state (v2 — the ideas.md refactor)
 
-`goblins/` package (evolved from the `gen.py` prototype, now removed):
-- `data.py` — weighted onset/vowel/coda pools, suffix families (vowel-initial
-  Latinate + consonant-initial medieval), real-stem pool
-- `generator.py` — assembly + junction smoothing: consonant-initial suffixes
-  require clean codas and heavy coda clusters get trimmed before them
-  (except l-initial suffixes: throngle, crumble); vowel-initial suffixes
-  sometimes trim the coda for flow ("throb-ulus")
-- `keepers.py` — keepers persist to `keepers.txt` (one name per line, seeded
-  with the canonical corpus); onset/coda/suffix/stem counts in keepers add to
-  base weights, capped at 3x base so no pattern dominates
-- `cli.py` — interactive batch/keep/reroll loop (`python3 -m goblins`),
-  one-shot mode (`-n 20`)
+The `gen.py` script and the first `goblins/data.py` package are retroactively
+the prototype (both removed, in git history). v2 layout:
+
+- `pools.toml` (project root) — THE fiddle file: all phonaestheme pools,
+  suffix families (latinate/medieval/diminutive/mineral), real stems, and
+  knobs, as `piece = weight` lines. Editing this is the intended way to
+  tune taste; no code changes needed. See ideas.md for the research and
+  theory behind the pool contents.
+- `goblins/pools.py` — loads/validates pools.toml with fiddler-friendly
+  errors. Suffix junction class is derived from spelling (first letter
+  vowel-ish or not), so families are pure flavor groupings.
+- `goblins/generator.py` — assembly + junction rules: silent-e stripping,
+  gemination for -ard/-ock/-ollop (blub+ard -> blubbard), heavy-coda
+  trimming before consonant suffixes (except l-initial: throngle, crumble),
+  flow-trim for vowel suffixes ("throb-ulus")
+- `goblins/keepers.py` — keepers persist to `keepers.txt` (one name per
+  line); onset/coda/suffix/stem counts in keepers add to base weights,
+  capped (alpha and cap are pools.toml knobs)
+- `goblins/cli.py` — interactive batch/keep/reroll loop (`python3 -m
+  goblins`), one-shot mode (`-n 20`)
+
+Requires Python 3.11+ (tomllib).
 
 ## Roadmap ideas (discussed with user, in rough priority order)
 
