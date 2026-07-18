@@ -1,130 +1,112 @@
 """Goblin assembly: stems + suffixes + junction smoothing.
 
-generate_batch() takes an optional `scorer` callable (name -> float).
-When given, it oversamples candidates and returns only the top slice —
-this is the plug-in point for the roadmap-step-3 n-gram scorer.
+Taste lives in pools.toml; this module is the linguistics. Junction rules:
+- vowel-initial suffixes attach anywhere; silent-e stems drop the e
+  (sludge + ular -> sludgular), and a few English-y suffixes geminate a
+  short final consonant (blub + ard -> blubbard, like sluggard)
+- consonant-initial suffixes need a clean coda, and heavy coda clusters
+  get trimmed first (grond + mond -> gronmond) — except before l-initial
+  suffixes, which blend fine as-is (throngle, crumble)
+
+generate_batch() takes an optional `scorer` callable (name -> float): it
+oversamples candidates and returns only the top slice. This is the plug-in
+point for the roadmap-step-3 n-gram scorer.
 """
 
 import random
 import re
-from dataclasses import dataclass
 
-from . import data
+from .pools import Pools
 
+# Stem endings that tolerate a consonant-initial suffix
+# (crudmond works because d -> m is a clean junction).
+OK_BEFORE_C = {"nd", "ng", "nk", "mp", "nt", "rk", "mb", "st",
+               "b", "d", "g", "m", "n"}
 
-@dataclass
-class Weights:
-    """A full set of pools + weights, possibly tuned by keeper counts."""
-    onsets: list
-    onset_w: list
-    vowels: list
-    vowel_w: list
-    codas: list
-    coda_w: list
-    suf_v: list
-    suf_v_w: list
-    suf_c: list
-    suf_c_w: list
-    stems: list
-    stem_w: list
-
-
-def base_weights() -> Weights:
-    return Weights(
-        onsets=data.ONSETS, onset_w=list(data.ONSET_W),
-        vowels=data.VOWELS, vowel_w=list(data.VOWEL_W),
-        codas=data.CODAS, coda_w=list(data.CODA_W),
-        suf_v=data.SUF_V, suf_v_w=list(data.SUF_V_W),
-        suf_c=data.SUF_C, suf_c_w=list(data.SUF_C_W),
-        stems=data.REAL_STEMS, stem_w=[1] * len(data.REAL_STEMS),
-    )
+# Suffixes that double a short final consonant, the way English does
+# in sluggard and hummock.
+GEMINATING = {"ard", "ock", "ollop"}
 
 
 def _pick(rng, pool, weights):
     return rng.choices(pool, weights)[0]
 
 
+def _pick_suffix(rng, p: Pools, vowel_only=False):
+    pool = [s for s in p.suffixes if s.vowel_initial] if vowel_only \
+        else p.suffixes
+    return rng.choices(pool, [s.weight for s in pool])[0]
+
+
 def _ends_clean(stem: str) -> bool:
-    """Can a consonant-initial suffix follow this stem?"""
-    return stem[-2:] in data.OK_BEFORE_C or stem[-1] in data.OK_BEFORE_C
+    return stem[-2:] in OK_BEFORE_C or stem[-1] in OK_BEFORE_C
 
 
-def _pick_suffix(rng, pool, weights, stem):
-    """Pick a suffix, retrying to avoid a doubled letter at the junction."""
-    s = _pick(rng, pool, weights)
-    for _ in range(5):
-        if s[0] != stem[-1]:
-            break
-        s = _pick(rng, pool, weights)
-    return s
+def _join(stem: str, suf) -> str:
+    if suf.vowel_initial:
+        if stem.endswith("e"):
+            stem = stem[:-1]
+        if suf.text in GEMINATING and re.search(r"[aeiou][bdgmnpt]$", stem):
+            stem += stem[-1]
+        return stem + suf.text
+    if suf.text[0] != "l":
+        m = re.search(r"[^aeiou]+$", stem)
+        if m and len(m.group()) >= 2:
+            stem = stem[: m.start() + 1]
+    return stem + suf.text
 
 
-def _smooth_junction(stem: str, suf: str) -> str:
-    """Trim a heavy coda cluster before a consonant-initial suffix
-    (Blelbmond prevention: grond+mond -> gronmond). l-initial suffixes
-    blend fine as-is (throngle, crumble), so they keep the cluster.
-    """
-    if suf[0] == "l":
-        return stem
-    m = re.search(r"[^aeiou]+$", stem)
-    if m and len(m.group()) >= 2:
-        return stem[: m.start() + 1]
-    return stem
+def _real_stem_goblin(rng, p: Pools) -> str:
+    stem = _pick(rng, p.stems, p.stem_w)
+    suf = _pick_suffix(rng, p)
+    if not suf.vowel_initial and not _ends_clean(stem):
+        suf = _pick_suffix(rng, p, vowel_only=True)
+    return _join(stem, suf)
 
 
-def _real_stem_goblin(rng, w: Weights) -> str:
-    stem = _pick(rng, w.stems, w.stem_w)
-    if rng.random() >= 0.7 and _ends_clean(stem):
-        s = _pick_suffix(rng, w.suf_c, w.suf_c_w, stem)
-        return _smooth_junction(stem, s) + s
-    if stem.endswith("e"):  # sludge + ular -> sludgular, not sludgeular
-        stem = stem[:-1]
-    return stem + _pick_suffix(rng, w.suf_v, w.suf_v_w, stem)
-
-
-def _synthetic_goblin(rng, w: Weights) -> str:
-    o = _pick(rng, w.onsets, w.onset_w)
-    v = _pick(rng, w.vowels, w.vowel_w)
-    c = _pick(rng, w.codas, w.coda_w)
-    if rng.random() < 0.65:
-        # vowel-initial suffix: trim coda to its first consonant 35% of the
-        # time for flow (throb-ulus vs thromb-ulus)
-        stem = o + v + (c[0] if rng.random() < 0.35 else c)
-        return stem + _pick_suffix(rng, w.suf_v, w.suf_v_w, stem)
-    # consonant-initial suffix: force a compatible coda
-    for _ in range(10):
-        if c in data.OK_BEFORE_C:
-            break
-        c = _pick(rng, w.codas, w.coda_w)
+def _synthetic_goblin(rng, p: Pools) -> str:
+    onset = _pick(rng, p.onsets, p.onset_w)
+    vowel = _pick(rng, p.vowels, p.vowel_w)
+    coda = _pick(rng, p.codas, p.coda_w)
+    suf = _pick_suffix(rng, p)
+    if suf.vowel_initial:
+        # sometimes trim the coda to its first consonant for flow
+        # (throb-ulus instead of thromb-ulus)
+        if rng.random() < p.flow_trim_p:
+            coda = coda[0]
     else:
-        c = "nd"
-    stem = o + v + c
-    s = _pick_suffix(rng, w.suf_c, w.suf_c_w, stem)
-    return _smooth_junction(stem, s) + s
+        for _ in range(10):
+            if coda in OK_BEFORE_C:
+                break
+            coda = _pick(rng, p.codas, p.coda_w)
+        else:
+            coda = "nd"
+    return _join(onset + vowel + coda, suf)
 
 
-def make_goblin(rng, w: Weights) -> str:
-    if rng.random() < data.REAL_STEM_P:
-        return _real_stem_goblin(rng, w)
-    return _synthetic_goblin(rng, w)
+def make_goblin(rng, p: Pools) -> str:
+    if rng.random() < p.real_stem_p:
+        return _real_stem_goblin(rng, p)
+    return _synthetic_goblin(rng, p)
 
 
-def generate_batch(n, rng=None, weights=None, exclude=(), scorer=None,
+def generate_batch(n, rng=None, pools=None, exclude=(), scorer=None,
                    oversample=4):
     """Generate n unique goblins, skipping anything in `exclude`.
 
     With a scorer, generates n * oversample candidates and returns the
     n highest-scoring ones (roadmap step 3 slots in here).
     """
+    from .pools import load_pools
     rng = rng or random.Random()
-    w = weights or base_weights()
+    p = pools or load_pools()
     target = n * oversample if scorer else n
     seen = {name.lower() for name in exclude}
     out = []
     for _ in range(target * 50):  # hard cap so a tiny pool can't loop forever
         if len(out) >= target:
             break
-        g = make_goblin(rng, w).capitalize()
+        g = make_goblin(rng, p).capitalize()
         if g.lower() not in seen:
             seen.add(g.lower())
             out.append(g)

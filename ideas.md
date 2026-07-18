@@ -1,8 +1,9 @@
 # Ideas: phoneme candidates + goblin theory
 
 Scratchpad of research findings, candidate pool additions, and thoughts on
-what makes a good phonetic goblin. Nothing here is implemented — raid this
-file when tuning `data.py`.
+what makes a good phonetic goblin. The pool candidates below were adopted
+into `pools.toml` in the v2 refactor — this file remains the idea log and
+the theory reference.
 
 Framing reminder: this project is not "names for goblins." A phonetic goblin
 is a word whose *phonetics* are the joke — a ridiculous mishmash of phonemes,

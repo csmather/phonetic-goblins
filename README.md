@@ -16,13 +16,20 @@ keepers, `d <name>` drop one, `s` show weight tuning, `q` quit.
 
 ## How it works
 
-- `goblins/data.py` — phoneme pools + base weights, suffix families, and the
-  real-stem pool (chunky real words like grist, throb, crud).
-- `goblins/generator.py` — assembles stems + suffixes with junction smoothing
-  (no consonant pileups; heavy codas get trimmed before consonant suffixes).
+- **`pools.toml`** — the fiddle file. All phonaestheme pools, suffix
+  families, real stems, and knobs live here as `piece = weight` lines.
+  Tune taste by editing this; no code required. Bad edits get a friendly
+  error naming the line.
+- `goblins/pools.py` — loads and validates pools.toml.
+- `goblins/generator.py` — assembles stems + suffixes with junction rules:
+  silent-e stripping, gemination (blub+ard → Blubbard), and heavy-coda
+  trimming before consonant suffixes so there are no consonant pileups.
 - `goblins/keepers.py` — keepers persist to `keepers.txt`; onset/coda/suffix/
   stem counts in the keepers gently retune the weights (capped so no single
   pattern dominates). Every reroll uses the freshly tuned weights.
+
+Requires Python 3.11+ (stdlib only). The research and theory behind the
+pool contents is in `ideas.md`.
 
 ## Roadmap hooks
 

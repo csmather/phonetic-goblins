@@ -1,29 +1,24 @@
-"""Keeper persistence + weight retuning (roadmap step 2).
+"""Keeper persistence + weight retuning.
 
 Keepers live in keepers.txt at the project root, one name per line —
 deliberately plain so it doubles as the training corpus for the future
 n-gram scorer (roadmap step 3).
 
 Retuning is a gentle nudge, not a takeover: each keeper occurrence of an
-onset/coda/suffix/stem adds ALPHA to its base weight, capped at CAP x base
-so no single pattern (looking at you, -aloid) can dominate. Vowels aren't
-retuned — parsing them out of finished names is too unreliable to be worth it.
+onset/coda/suffix/stem adds `retune_alpha` to its base weight, capped at
+`retune_cap` x base so no single pattern (looking at you, -aloid) can
+dominate. Both knobs live in pools.toml. Vowels aren't retuned — parsing
+them out of finished names is too unreliable to be worth it.
 """
 
 import re
 from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 
-from . import data
-from .generator import Weights, base_weights
+from .pools import Pools, Suffix
 
 KEEPERS_FILE = Path(__file__).resolve().parent.parent / "keepers.txt"
-
-ALPHA = 1.0  # weight added per keeper occurrence
-CAP = 3.0    # tuned weight never exceeds CAP x base weight
-
-_ONSETS_BY_LEN = sorted(data.ONSETS, key=len, reverse=True)
-_SUFFIXES_BY_LEN = sorted(data.SUF_V + data.SUF_C, key=len, reverse=True)
 
 
 def load_keepers():
@@ -51,7 +46,7 @@ def remove_keeper(name):
     return True
 
 
-def parse_features(name):
+def parse_features(name, p: Pools):
     """Pull recognizable onset/coda/suffix/stem out of a keeper name.
 
     Best-effort: anything that doesn't match a known pool piece just
@@ -60,50 +55,62 @@ def parse_features(name):
     n = name.strip().lower()
     feats = {}
 
-    suffix = next((s for s in _SUFFIXES_BY_LEN
+    by_len = sorted((s.text for s in p.suffixes), key=len, reverse=True)
+    suffix = next((s for s in by_len
                    if n.endswith(s) and len(n) - len(s) >= 3
                    and re.search(r"[aeiou]", n[: -len(s)])), None)
     if suffix:
         feats["suffix"] = suffix
     rest = n[: -len(suffix)] if suffix else n
 
-    onset = next((o for o in _ONSETS_BY_LEN if n.startswith(o)), None)
+    onset = next((o for o in sorted(p.onsets, key=len, reverse=True)
+                  if n.startswith(o)), None)
     if onset:
         feats["onset"] = onset
 
-    if rest in data.REAL_STEMS:
-        feats["stem"] = rest
-    elif rest + "e" in data.REAL_STEMS:  # sludgular -> sludge
-        feats["stem"] = rest + "e"
+    # undo gemination and silent-e stripping when matching real stems
+    for candidate in (rest, rest + "e", rest[:-1] if len(rest) > 3 else rest):
+        if candidate in p.stems:
+            feats["stem"] = candidate
+            break
 
     m = re.search(r"[^aeiou]+$", rest)
-    if m and m.group() in data.CODAS:
+    if m and m.group() in p.codas:
         feats["coda"] = m.group()
 
     return feats
 
 
-def feature_counts(keepers):
+def feature_counts(keepers, p: Pools):
     counts = {"onset": Counter(), "coda": Counter(),
               "suffix": Counter(), "stem": Counter()}
     for name in keepers:
-        for kind, value in parse_features(name).items():
+        for kind, value in parse_features(name, p).items():
             counts[kind][value] += 1
     return counts
 
 
-def _tune(pool, base, counter):
-    return [min(b * CAP, b + ALPHA * counter.get(p, 0))
-            for p, b in zip(pool, base)]
-
-
-def tuned_weights(keepers=None) -> Weights:
+def tuned_pools(p: Pools, keepers=None) -> Pools:
+    """A copy of `p` with keeper counts blended into the weights."""
     keepers = load_keepers() if keepers is None else keepers
-    counts = feature_counts(keepers)
-    w = base_weights()
-    w.onset_w = _tune(w.onsets, w.onset_w, counts["onset"])
-    w.coda_w = _tune(w.codas, w.coda_w, counts["coda"])
-    w.suf_v_w = _tune(w.suf_v, w.suf_v_w, counts["suffix"])
-    w.suf_c_w = _tune(w.suf_c, w.suf_c_w, counts["suffix"])
-    w.stem_w = _tune(w.stems, w.stem_w, counts["stem"])
-    return w
+    counts = feature_counts(keepers, p)
+
+    def tune(pool, base, counter):
+        return [min(b * p.retune_cap, b + p.retune_alpha * counter.get(x, 0))
+                for x, b in zip(pool, base)]
+
+    suf_counter = counts["suffix"]
+    suffixes = [
+        Suffix(s.text,
+               min(s.weight * p.retune_cap,
+                   s.weight + p.retune_alpha * suf_counter.get(s.text, 0)),
+               s.family)
+        for s in p.suffixes]
+
+    return replace(
+        p,
+        onset_w=tune(p.onsets, p.onset_w, counts["onset"]),
+        coda_w=tune(p.codas, p.coda_w, counts["coda"]),
+        stem_w=tune(p.stems, p.stem_w, counts["stem"]),
+        suffixes=suffixes,
+    )
