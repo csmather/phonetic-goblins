@@ -1,17 +1,18 @@
 # phonetic-goblins
 
-A generator for absurd character names: Robustaloid, Crudmond, Squelchior.
+JavaScript generator for absurd character names: Robustaloid, Crudmond, Squelchior, etc.
 
-**Live at: https://csmather.github.io/phonetic-goblins/**
+A phonetic goblin is a word that sounds like a real word gone wrong.
 
-## The vibe
+The good ones share a few traits: 
+- Heavy consonant onsets (thr-, gr-, squ-, spl-)
+- Back vowels (o, u) and diphthongs including them
+- Chunky endings (-nd, -mb, -lch)
+- Obvious pronunciation
 
-A phonetic goblin is a word that sounds like a real English, Latin, or
-medieval word gone wrong. The good ones share a few traits: heavy consonant
-onsets (thr-, gr-, squ-, spl-), back vowels (o, u), chunky endings (-nd,
--mb, -lch), and an obvious pronunciation — if you have to negotiate where
-the stress goes, the word is dead. Above all it should be funny on first
-read. A low hit rate per batch is expected; rerolling is part of the joy.
+Above all it should be funny on first read. A low hit rate per batch is expected; rerolling is part of the joy.
+
+**Use it: https://csmather.github.io/phonetic-goblins/**
 
 ## How the names are built
 
@@ -52,12 +53,9 @@ browser.
   retuning.
 - `app.js` / `index.html` / `style.css` — the UI.
 
-No build step, no dependencies. Run locally by opening index.html, or
-`python3 -m http.server`. Pushing to `main` deploys via GitHub Actions.
+## Potential Future Changes
 
-## Roadmap
-
-Next up is scoring: a small character-level Markov model trained on the
+Scoring: a small character-level Markov model trained on the
 keepers, used to rank candidates rather than generate them. The hook
 already exists — `generateBatch(..., scorer)` oversamples and keeps the
 top slice.
