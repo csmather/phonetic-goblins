@@ -1,0 +1,137 @@
+:root {
+  --bg: #191512;
+  --panel: #241f1a;
+  --text: #e8ded0;
+  --muted: #9a8c7a;
+  --accent: #c98f3d;
+  --kept: #7da05e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  width: min(40rem, 100% - 2rem);
+  margin: 0 auto;
+  padding: 2rem 0;
+  flex: 1;
+}
+
+h1 {
+  font-size: 1.7rem;
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+}
+
+h1 { margin-bottom: 1.25rem; }
+
+.controls {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--accent);
+  background: none;
+  color: var(--accent);
+  border-radius: 4px;
+  padding: 0.4rem 1.2rem;
+}
+
+button:hover { background: rgba(201, 143, 61, 0.15); }
+
+button.small { padding: 0.15rem 0.7rem; font-size: 0.85rem; }
+
+#batch-label { color: var(--muted); font-size: 0.9rem; }
+
+.batch {
+  list-style: none;
+  margin: 0 0 2.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.5rem;
+}
+
+.goblin {
+  width: 100%;
+  text-align: left;
+  font-size: 1.25rem;
+  border: 1px solid transparent;
+  color: var(--text);
+  background: var(--panel);
+  padding: 0.55rem 0.9rem;
+}
+
+.goblin:hover {
+  border-color: var(--accent);
+  background: var(--panel);
+}
+
+.goblin.kept {
+  color: var(--kept);
+  border-color: var(--kept);
+  cursor: default;
+}
+
+.keepers-head {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+h2 { font-size: 1.1rem; color: var(--accent); margin: 0; }
+
+.keepers {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.keepers li {
+  background: var(--panel);
+  border-radius: 4px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.keepers li.yours { color: var(--kept); }
+
+.drop {
+  border: none;
+  padding: 0 0.15rem;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.drop:hover { color: var(--text); background: none; }
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.8rem;
+}
+
+footer a { color: var(--muted); }

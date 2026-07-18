@@ -1,40 +1,38 @@
 # phonetic-goblins
 
 Generator for absurd character names: Robustaloid, Crudmond, Squelchior tier.
-See CLAUDE.md for the vibe, the corpus, and the taste rules.
+See CLAUDE.md for the vibe, the corpus, and the taste rules; ideas.md for the
+research and theory behind the pools.
 
-## Usage
+**Live at: https://csmather.github.io/phonetic-goblins/**
 
-```sh
-python3 -m goblins            # interactive: roll batches, keep the bangers
-python3 -m goblins -n 20      # one-shot: print 20 names and exit
-python3 -m goblins --seed 7   # reproducible rolls
-```
-
-Interactive commands: enter/`r` reroll, `2 7` keep those numbers, `k` list
-keepers, `d <name>` drop one, `s` show weight tuning, `q` quit.
+Static site, no build step, no dependencies. Pushing to `main` deploys via
+GitHub Actions.
 
 ## How it works
 
-- **`pools.toml`** — the fiddle file. All phonaestheme pools, suffix
-  families, real stems, and knobs live here as `piece = weight` lines.
-  Tune taste by editing this; no code required. Bad edits get a friendly
-  error naming the line.
-- `goblins/pools.py` — loads and validates pools.toml.
-- `goblins/generator.py` — assembles stems + suffixes with junction rules:
-  silent-e stripping, gemination (blub+ard → Blubbard), and heavy-coda
-  trimming before consonant suffixes so there are no consonant pileups.
-- `goblins/keepers.py` — keepers persist to `keepers.txt`; onset/coda/suffix/
-  stem counts in the keepers gently retune the weights (capped so no single
-  pattern dominates). Every reroll uses the freshly tuned weights.
+- **`pools.js`** — the fiddle file. All phonaestheme pools, suffix families
+  (latinate/medieval/diminutive/mineral), real stems, knobs, and the seed
+  keeper corpus live here as commented `piece: weight` lines. Tune taste by
+  editing this; no other code involved.
+- `goblins.js` — the engine: assembles stems + suffixes with junction rules
+  (silent-e stripping, gemination like blub+ard → Blubbard, heavy-coda
+  trimming before consonant suffixes so there are no pileups), plus keeper
+  storage and weight retuning. Keeper counts of each onset/coda/suffix/stem
+  gently boost its weight, capped so no single pattern dominates.
+- `app.js` / `index.html` / `style.css` — the UI. Click a name to keep it;
+  the seed corpus is baked in and each visitor's own keeps persist in their
+  browser's localStorage.
 
-Requires Python 3.11+ (stdlib only). The research and theory behind the
-pool contents is in `ideas.md`.
+Run locally: open index.html in a browser, or `python3 -m http.server`.
 
 ## Roadmap hooks
 
-`keepers.txt` is one name per line on purpose — it's the training corpus for
-the step-3 n-gram scorer. `generate_batch(..., scorer=fn)` already accepts any
-`name -> float` callable: it oversamples candidates and returns the top slice.
-Step 3 is just writing that callable (char-level order-2/3 Markov model
-trained on the keepers) and passing it in from the CLI.
+`generateBatch(..., scorer)` accepts any `name -> number` callable: it
+oversamples candidates and returns the top slice. Roadmap step 3 is writing
+that scorer (char-level order-2/3 Markov model trained on the keepers).
+
+## History
+
+The original implementation was Python (same engine, `pools.toml`,
+interactive CLI). It lives in git history at the `python-final` tag.
