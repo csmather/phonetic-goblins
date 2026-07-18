@@ -108,7 +108,6 @@ const POOLS = {
 // Visitors' own keeps live in their browser (localStorage) on top of these.
 const SEED_KEEPERS = [
   "Robustaloid", "Squelchior", "Throbulus", "Crembulant", "Throngle",
-  "Grondular", "Crudmond", "Splanchnic", "Blubthazar", "Grondombulus",
-  "Drankular", "Brudulant", "Crobmund", "Thruntax", "Squonius",
-  "Bombastaloid", "Borborygmus", "Snogular", "Gunkoid", "Groulchombulus",
+  "Grondular", "Crudmond", "Splanchnic", "Blubthazar", "Crobmund",
+  "Thruntax", "Borborygmus", "Snogular", "Gunkoid", "Groulchombulus"
 ];
